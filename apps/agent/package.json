@@ -12,7 +12,8 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check:data": "tsx src/scripts/check-data.ts"
+    "check:data": "tsx src/scripts/check-data.ts",
+    "ask": "tsx src/scripts/ask.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.8",
