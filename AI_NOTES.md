@@ -24,7 +24,7 @@ How I used AI tools during the build, what I verified myself, and where I chose 
   idempotent replay, and the write-then-500 failure path, both locally and on Railway.
 
   ## Steps 2–3 – Data layer
-- Delegated: implementation of the client, cleaning, metrics and tools from my spec, with unit tests.
+
 - Verified: each planted defect and scenario against the deployed mock via a smoke script
   (npm run check:data): fatigue, burner, winner, small sample, tracking outage.
 - Corrected: the outage issue told the user that outage days were excluded from CPA and ROAS, but the
@@ -34,3 +34,15 @@ How I used AI tools during the build, what I verified myself, and where I chose 
 - Chose differently: per-ad-set fetching was simpler, but it cannot detect an account-wide tracking
   outage, so tools fetch the whole account and filter in code.
 
+## Step 6 – Pause with human approval
+
+- Verified: 13 unit tests for every path, including the "failed halfway" case, double approval,
+  expiry and non-approvers. Then an end-to-end run against the real MongoDB and mock API (two concurrent
+  approvals executed once; the injected 500-after-write was reported as paused), and the full flow in
+  the production bot, confirmed in the production audit log.
+- Corrected (found during deployment): new required variables were pushed before they existed in
+  Railway, so the deploy refused to start (MONGODB_URI: Required). The fail-fast config made the cause
+  obvious; I added the variable and redeployed.
+- Chose differently: the AI suggested a separate "approved" state and a background job for expiry.
+  I kept an atomic pending → executing transition and checked expiry on click, which is less code
+  with the same safety.
