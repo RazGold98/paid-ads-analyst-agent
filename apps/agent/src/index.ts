@@ -1,10 +1,11 @@
 import type { Server } from "node:http";
 import express from "express";
 import { webhookCallback } from "grammy";
-import { bot } from "./bot.js";
+import { bot, chat, proposeAndNotify, store, tools } from "./bot.js";
 import { config } from "./config.js";
 import { mongo } from "./db.js";
 import { logger } from "./logger.js";
+import { createMcpRouter } from "./mcp/server.js";
 import { app } from "./server.js";
 
 function listen(port: number): Promise<Server> {
@@ -29,8 +30,26 @@ async function main(): Promise<void> {
     );
   }
 
+  // MCP for other agents: read and propose only. Off unless MCP_API_KEYS is set.
+  if (config.mcpClients.length > 0) {
+    app.use(
+      "/mcp",
+      createMcpRouter({
+        clients: config.mcpClients,
+        ads: tools,
+        chat,
+        proposePause: proposeAndNotify,
+        getRequest: (id) => store.get(id),
+        onToolCall: (client, tool) => logger.info({ client, tool }, "MCP tool call"),
+      }),
+    );
+  }
+
   const server = await listen(config.port);
-  logger.info({ port: config.port, mode: webhook ? "webhook" : "polling" }, "HTTP server listening");
+  logger.info(
+    { port: config.port, mode: webhook ? "webhook" : "polling", mcpClients: config.mcpClients.map((c) => c.name) },
+    "HTTP server listening",
+  );
 
   if (webhook) {
     const ok = await bot.api.setWebhook(webhook.url, { secret_token: webhook.secret });

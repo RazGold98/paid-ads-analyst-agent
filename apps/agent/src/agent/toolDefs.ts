@@ -106,3 +106,6 @@ export async function executeTool(ctx: ToolContext, name: string, rawArgs: strin
     throw err;
   }
 }
+
+/** The same tools for the MCP server, which exposes them with the same schemas and validation. */
+export const toolSpecs = Object.entries(TOOLS).map(([name, tool]) => ({ name, description: tool.description, args: tool.args }));

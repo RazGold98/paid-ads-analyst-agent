@@ -3,7 +3,7 @@ import { Bot, InlineKeyboard } from "grammy";
 import type { User } from "grammy/types";
 import { cardText, proposalForModel } from "./actions/card.js";
 import { approvePause, proposePause, rejectPause, type Outcome, type PauseDeps } from "./actions/pause.js";
-import { MongoActionStore, type ActionRequest } from "./actions/store.js";
+import { MongoActionStore, type ActionRequest, type Requester } from "./actions/store.js";
 import { createAdsClient, createAdsTools } from "./ads/index.js";
 import { runAgent } from "./agent/run.js";
 import { config } from "./config.js";
@@ -14,9 +14,10 @@ import { logger } from "./logger.js";
 export const bot = new Bot(config.telegramBotToken);
 
 const client = createAdsClient();
-const tools = createAdsTools(client);
-const chat = createOpenRouterChat(config.llm);
-const store = new MongoActionStore(db);
+// Shared with the MCP server (index.ts), so both channels use the same tools, model and approvals.
+export const tools = createAdsTools(client);
+export const chat = createOpenRouterChat(config.llm);
+export const store = new MongoActionStore(db);
 const actions: PauseDeps = { store, client, ads: tools };
 
 // Last few user/assistant messages per chat, so follow-ups ("and the men's ad set?") work.
@@ -64,13 +65,9 @@ async function answer(chatId: number, question: string, userName: string): Promi
   void typing();
   const typingTimer = setInterval(typing, 4000);
 
-  // The pause tool, bound to this user: it creates a pending request and sends cards to the approvers.
-  const proposePauseForUser = async (args: { adsetId: string; reason: string }) => {
-    const outcome = await proposePause(actions, { ...args, requestedBy: { channel: "telegram", name: userName, chatId } });
-    if (!outcome.ok) return { error: outcome.error };
-    const notified = outcome.created ? await sendCards(outcome.request) : outcome.request.cards.length;
-    return proposalForModel(outcome.request, outcome.created === true, notified);
-  };
+  // The pause tool, bound to this user.
+  const proposePauseForUser = (args: { adsetId: string; reason: string }) =>
+    proposeAndNotify(args, { channel: "telegram", name: userName, chatId });
 
   try {
     const history = histories.get(chatId) ?? [];
@@ -92,6 +89,14 @@ async function answer(chatId: number, question: string, userName: string): Promi
   } finally {
     clearInterval(typingTimer);
   }
+}
+
+/** Creates a pending pause request and sends its card to the approvers. Used by Telegram and MCP. */
+export async function proposeAndNotify(args: { adsetId: string; reason: string }, requestedBy: Requester) {
+  const outcome = await proposePause(actions, { ...args, requestedBy });
+  if (!outcome.ok) return { error: outcome.error };
+  const notified = outcome.created ? await sendCards(outcome.request) : outcome.request.cards.length;
+  return proposalForModel(outcome.request, outcome.created === true, notified);
 }
 
 async function send(chatId: number, answerText: string): Promise<void> {
