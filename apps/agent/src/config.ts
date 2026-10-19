@@ -27,6 +27,19 @@ const EnvSchema = z
     APPROVER_CODE: z.string({ error: "Required" }).trim().min(12, "Must be at least 12 characters"),
     // Monthly cap for model spend. The $50 total also covers hosting (~$5-10 on Railway).
     MONTHLY_BUDGET_USD: z.coerce.number().positive().default(40),
+    // Daily report: local time and time zone of the team.
+    REPORT_TIME: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Must be HH:MM (24h)").default("08:00"),
+    REPORT_TIMEZONE: z
+      .string()
+      .default("Asia/Jerusalem")
+      .refine((tz) => {
+        try {
+          new Intl.DateTimeFormat("en", { timeZone: tz });
+          return true;
+        } catch {
+          return false;
+        }
+      }, "Must be an IANA time zone, e.g. Asia/Jerusalem"),
     // Optional: when unset, the MCP endpoint is off. Format: name:key:scopes, comma-separated.
     MCP_API_KEYS: z.string().optional(),
   })
@@ -79,6 +92,7 @@ const EnvSchema = z
       },
       approverCode: env.APPROVER_CODE,
       monthlyBudgetUsd: env.MONTHLY_BUDGET_USD,
+      report: { time: env.REPORT_TIME, timeZone: env.REPORT_TIMEZONE },
       mcpClients,
     };
   });

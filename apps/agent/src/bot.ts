@@ -11,6 +11,8 @@ import { config } from "./config.js";
 import { db } from "./db.js";
 import { createOpenRouterChat, type ChatMessage } from "./llm/openrouter.js";
 import { logger } from "./logger.js";
+import { buildDailyReport } from "./report/daily.js";
+import { localClock } from "./report/schedule.js";
 
 export const bot = new Bot(config.telegramBotToken);
 
@@ -37,7 +39,8 @@ bot.command("start", (ctx) =>
   ctx.reply(
     "Hi! I'm the paid-ads analyst for Stride Footwear. I answer from the Meta ad account's data.\n\n" +
       'Try: "How is the account doing this week?" or "Why did CPA go up on as_women_video?"\n\n' +
-      "I can also ask the team to approve pausing an ad set. Approvers register with /register <code>.",
+      "I can also ask the team to approve pausing an ad set. Approvers register with /register <code>.\n\n" +
+      `Approvers get a report every morning at ${config.report.time} (${config.report.timeZone}). /report shows it now, /budget shows AI spend.`,
   ),
 );
 
@@ -60,6 +63,12 @@ bot.command("register", async (ctx) => {
 bot.command("budget", async (ctx) => {
   const s = await budget.status();
   await ctx.reply(`AI spend in ${s.month}: $${s.spentUsd.toFixed(2)} of $${s.budgetUsd.toFixed(2)} (${Math.round(s.fraction * 100)}%).`);
+});
+
+// Sends the morning report now, to this chat only, so testers do not have to wait for the schedule.
+bot.command("report", async (ctx) => {
+  const { date } = localClock(new Date(), config.report.timeZone);
+  await ctx.reply(await buildDailyReport(tools, date));
 });
 
 bot.on("message:text", (ctx) => {

@@ -1,11 +1,13 @@
 import type { Server } from "node:http";
 import express from "express";
 import { webhookCallback } from "grammy";
-import { bot, chat, proposeAndNotify, store, tools } from "./bot.js";
+import { bot, chat, notifyApprovers, proposeAndNotify, store, tools } from "./bot.js";
 import { config } from "./config.js";
-import { mongo } from "./db.js";
+import { db, mongo } from "./db.js";
 import { logger } from "./logger.js";
 import { createMcpRouter } from "./mcp/server.js";
+import { buildDailyReport } from "./report/daily.js";
+import { MongoRunStore, startDailyReport } from "./report/schedule.js";
 import { app } from "./server.js";
 
 function listen(port: number): Promise<Server> {
@@ -66,8 +68,21 @@ async function main(): Promise<void> {
       });
   }
 
+  // The scheduled task: the morning report to the approvers, once per day.
+  const stopReport = startDailyReport({
+    ...config.report,
+    runs: new MongoRunStore(db),
+    send: async (date) => {
+      await notifyApprovers(await buildDailyReport(tools, date));
+      logger.info({ date }, "Daily report sent");
+    },
+    onError: (err) => logger.error({ err }, "Daily report failed"),
+  });
+  logger.info(config.report, "Daily report scheduled");
+
   const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
     logger.info({ signal }, "Shutting down");
+    stopReport();
     await bot.stop();
     await mongo.close();
     server.close((err) => {
