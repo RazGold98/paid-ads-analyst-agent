@@ -5,6 +5,7 @@ import { cardText, proposalForModel } from "./actions/card.js";
 import { approvePause, proposePause, rejectPause, type Outcome, type PauseDeps } from "./actions/pause.js";
 import { MongoActionStore, type ActionRequest, type Requester } from "./actions/store.js";
 import { createAdsClient, createAdsTools } from "./ads/index.js";
+import { BudgetExceededError, BudgetGuard, MongoBudgetStore } from "./budget/guard.js";
 import { runAgent } from "./agent/run.js";
 import { config } from "./config.js";
 import { db } from "./db.js";
@@ -16,8 +17,10 @@ export const bot = new Bot(config.telegramBotToken);
 const client = createAdsClient();
 // Shared with the MCP server (index.ts), so both channels use the same tools, model and approvals.
 export const tools = createAdsTools(client);
-export const chat = createOpenRouterChat(config.llm);
 export const store = new MongoActionStore(db);
+// Every model call, from any channel, goes through the budget guard.
+export const budget = new BudgetGuard(new MongoBudgetStore(db), config.monthlyBudgetUsd, (text) => notifyApprovers(text));
+export const chat = budget.wrap(createOpenRouterChat(config.llm));
 const actions: PauseDeps = { store, client, ads: tools };
 
 // Last few user/assistant messages per chat, so follow-ups ("and the men's ad set?") work.
@@ -54,6 +57,11 @@ bot.command("register", async (ctx) => {
   await ctx.reply("You are now an approver. You'll get a card with Approve / Reject buttons for every pause request.");
 });
 
+bot.command("budget", async (ctx) => {
+  const s = await budget.status();
+  await ctx.reply(`AI spend in ${s.month}: $${s.spentUsd.toFixed(2)} of $${s.budgetUsd.toFixed(2)} (${Math.round(s.fraction * 100)}%).`);
+});
+
 bot.on("message:text", (ctx) => {
   // Answer in the background: an agent run can take longer than Telegram's webhook timeout.
   void answer(ctx.chat.id, ctx.message.text, displayName(ctx.from));
@@ -82,6 +90,11 @@ async function answer(chatId: number, question: string, userName: string): Promi
 
     await send(chatId, result.answer);
   } catch (err) {
+    if (err instanceof BudgetExceededError) {
+      logger.warn({ chatId }, "Budget exceeded, question not answered");
+      await send(chatId, `${err.message}. I can't answer questions until next month. Pending approvals still work.`).catch(() => {});
+      return;
+    }
     logger.error({ err, chatId }, "Agent failed");
     await bot.api
       .sendMessage(chatId, "Sorry, something went wrong while answering. Please try again in a minute.")
@@ -104,6 +117,13 @@ async function send(chatId: number, answerText: string): Promise<void> {
   const text = answerText.replaceAll("**", "");
   for (let i = 0; i < text.length; i += TELEGRAM_MAX_LENGTH) {
     await bot.api.sendMessage(chatId, text.slice(i, i + TELEGRAM_MAX_LENGTH));
+  }
+}
+
+/** A plain message to every registered approver (budget alerts, scheduled report). */
+export async function notifyApprovers(text: string): Promise<void> {
+  for (const approver of await store.listApprovers()) {
+    await bot.api.sendMessage(approver.chatId, text).catch((err) => logger.warn({ err, approver: approver._id }, "Could not notify approver"));
   }
 }
 

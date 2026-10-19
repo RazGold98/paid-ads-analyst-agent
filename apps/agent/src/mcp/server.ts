@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { ActionRequest, Requester } from "../actions/store.js";
 import type { AdsTools } from "../ads/index.js";
 import { runAgent } from "../agent/run.js";
+import { BudgetExceededError } from "../budget/guard.js";
 import { executeTool, toolSpecs, type ToolContext } from "../agent/toolDefs.js";
 import type { ChatFn } from "../llm/openrouter.js";
 import { findClient, type McpClient, type Scope } from "./keys.js";
@@ -56,8 +57,13 @@ function buildServer(deps: McpDeps, client: McpClient): McpServer {
       async ({ question }) => {
         deps.onToolCall?.(client.name, "ask_analyst");
         // No proposePause here: asking a question can never create a pause request, whatever the question says.
-        const result = await runAgent({ chat: deps.chat, tools: deps.ads, history: [], question });
-        return text(result.answer);
+        try {
+          const result = await runAgent({ chat: deps.chat, tools: deps.ads, history: [], question });
+          return text(result.answer);
+        } catch (err) {
+          if (err instanceof BudgetExceededError) return text(err.message, true);
+          throw err;
+        }
       },
     );
   }
