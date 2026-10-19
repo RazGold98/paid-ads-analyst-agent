@@ -17,6 +17,8 @@ const EnvSchema = z
     MOCK_API_URL: z.url({ error: "Required, must be a URL" }),
     MOCK_API_TOKEN: z.string({ error: "Required" }).min(16),
     AD_ACCOUNT_ID: z.string().min(1).default("act_1001"),
+    OPENROUTER_API_KEY: z.string({ error: "Required" }).min(1),
+    OPENROUTER_MODEL: z.string().min(1).default("anthropic/claude-haiku-5.5"),
   })
   .transform((env, ctx) => {
     let webhook: { url: string; secret: string } | undefined;
@@ -46,6 +48,10 @@ const EnvSchema = z
         baseUrl: env.MOCK_API_URL.replace(/\/+$/, ""),
         token: env.MOCK_API_TOKEN,
         accountId: env.AD_ACCOUNT_ID,
+      },
+      llm: {
+        apiKey: env.OPENROUTER_API_KEY,
+        model: env.OPENROUTER_MODEL,
       },
     };
   });
