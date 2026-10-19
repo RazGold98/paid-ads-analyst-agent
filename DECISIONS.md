@@ -7,7 +7,7 @@
   to an external system and failures are realistic.
 - Mock uses a simple flat schema; messy data is injected as specific,
   documented defects rather than mimicking Meta's full format.
-- Data is generated relative to "today" so it stays fresh during the 10-day test window.
+- Data rows are stored as "days ago" and mapped to real dates on each request, so the data stays fresh during the 10-day test window.
 
 ## Step 0 – Skeleton & deploy
 - Monorepo: apps/agent + apps/mock-meta-api, each deployed as its own Railway service.
