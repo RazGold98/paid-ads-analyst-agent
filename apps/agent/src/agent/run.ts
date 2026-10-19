@@ -1,7 +1,7 @@
 import type { AdsTools } from "../ads/index.js";
 import type { ChatFn, ChatMessage, Usage } from "../llm/openrouter.js";
 import { systemPrompt } from "./prompt.js";
-import { executeTool, toolDefinitions } from "./toolDefs.js";
+import { executeTool, toolDefinitions, type ToolContext } from "./toolDefs.js";
 
 // Upper bound on model calls per question, so a confused model cannot loop (and spend) forever.
 export const MAX_STEPS = 5;
@@ -16,6 +16,8 @@ export interface AgentResult {
 export async function runAgent(opts: {
   chat: ChatFn;
   tools: AdsTools;
+  // Creates a pending pause request for this conversation's user; omitted where no one can approve.
+  proposePause?: ToolContext["proposePause"];
   // Earlier user/assistant turns of this conversation.
   history: ChatMessage[];
   question: string;
@@ -26,6 +28,7 @@ export async function runAgent(opts: {
     ...opts.history,
     { role: "user", content: opts.question },
   ];
+  const context: ToolContext = { ads: opts.tools, proposePause: opts.proposePause };
   const toolCalls: string[] = [];
   const usage: Usage = { promptTokens: 0, completionTokens: 0, costUsd: 0 };
 
@@ -46,7 +49,7 @@ export async function runAgent(opts: {
     messages.push({ role: "assistant", content: response.message.content, tool_calls: calls });
     for (const call of calls) {
       toolCalls.push(call.function.name);
-      const content = await executeTool(opts.tools, call.function.name, call.function.arguments);
+      const content = await executeTool(context, call.function.name, call.function.arguments);
       messages.push({ role: "tool", tool_call_id: call.id, content });
     }
   }
