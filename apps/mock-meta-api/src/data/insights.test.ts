@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ADSETS } from "./entities.js";
-import { dateDaysAgo, generateInsights, getWindow } from "./generator.js";
+import { dateDaysAgo, getInsights, getWindow } from "./insights.js";
 
 const NOW = new Date("2026-06-15T13:45:00Z");
-const rows = generateInsights(NOW);
+const rows = getInsights(NOW);
 
 const day = (daysAgo: number) => dateDaysAgo(NOW, daysAgo);
 /** Rows for one ad set from `fromDaysAgo` to `toDaysAgo` inclusive (from >= to). */
@@ -11,10 +11,16 @@ const rowsFor = (adsetId: string, fromDaysAgo: number, toDaysAgo: number) =>
   rows.filter((r) => r.adset_id === adsetId && r.date >= day(fromDaysAgo) && r.date <= day(toDaysAgo));
 const avg = (values: number[]) => values.reduce((a, b) => a + b, 0) / values.length;
 
-describe("generateInsights", () => {
+describe("getInsights", () => {
   it("is deterministic for the same day", () => {
-    expect(generateInsights(new Date("2026-06-15T00:00:01Z"))).toEqual(rows);
-    expect(generateInsights(new Date(NOW))).toEqual(rows);
+    expect(getInsights(new Date("2026-06-15T00:00:01Z"))).toEqual(rows);
+    expect(getInsights(new Date(NOW))).toEqual(rows);
+  });
+
+  it("rolls the same fixture rows forward one date per day", () => {
+    const nextDay = getInsights(new Date("2026-06-16T09:00:00Z"));
+    expect(nextDay.map(({ date: _, ...rest }) => rest)).toEqual(rows.map(({ date: _, ...rest }) => rest));
+    expect(nextDay.at(-1)?.date).toBe("2026-06-15");
   });
 
   it("covers the 30 days ending yesterday (UTC)", () => {

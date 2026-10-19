@@ -3,7 +3,7 @@ import express, { type ErrorRequestHandler, type RequestHandler, type Response }
 import { z } from "zod";
 import { config } from "./config.js";
 import { ACCOUNT, ADSETS, CAMPAIGNS, type AdSet, type AdSetDef } from "./data/entities.js";
-import { generateInsights, getWindow } from "./data/generator.js";
+import { getInsights, getWindow } from "./data/insights.js";
 import { logger } from "./logger.js";
 import type { Store } from "./store.js";
 
@@ -124,7 +124,7 @@ export function createApp(store: Store): express.Express {
     }
 
     // A range entirely outside the window clamps to since > until, which matches no rows.
-    const data = generateInsights(now).filter(
+    const data = getInsights(now).filter(
       (row) =>
         row.date >= since &&
         row.date <= until &&

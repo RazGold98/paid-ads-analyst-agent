@@ -1,7 +1,8 @@
 # Mock Meta API – Scenarios
 
-Data covers the last 30 days ending yesterday (UTC) and rolls forward every day.
-`d` = days ago (1 = yesterday). Numbers are seeded from `adset_id + date`, so they are reproducible.
+All insights come from a static fixture, `src/data/insights.fixture.json` (6 ad sets x 30 days, one row per line).
+Rows are keyed by `days_ago` (`d`, 1 = yesterday) and mapped to real dates at request time,
+so the data always covers the last 30 days ending yesterday (UTC). The numbers never change.
 
 ## Performance scenarios
 
@@ -16,6 +17,8 @@ Data covers the last 30 days ending yesterday (UTC) and rolls forward every day.
 | all ad sets | Tracking outage | d=10: conversions = 0 and conversion_value = 0 for every ad set; impressions, clicks and spend are normal | Measurement problem, not a performance drop. Exclude or flag d=10. Don't act on it |
 
 ## Data defects
+
+These are written directly into the fixture rows.
 
 | Ad set | Day | Defect | Correct handling |
 |---|---|---|---|
