@@ -1,14 +1,22 @@
-# AI usage log
-Where AI helped, and where it was wrong or misleading.
+# AI usage
+How I used AI tools during the build, what I verified myself, and where I chose differently.
 
-## Step 0 – Skeleton
-- Helped: Claude Code scaffolded the agent service (config, bot, server, entry point) and
-  self-tested config validation and /health with a fake token.
-- Helped: explained Railway setup step by step (root directory, build/start commands, variables).
-- Limitation: couldn't test real Telegram without a token; I verified ping/pong manually.
+## Approach
+- I wrote the specs (structure, scenarios, data rules, failure behaviour) and used Claude Code to
+  implement them. Every generated file was reviewed before committing.
+- I used an AI assistant as a sounding board for design trade-offs and deployment setup.
+- Anything that affects correctness (data, scenarios, failure paths) was verified by tests and by
+  calling the deployed services directly.
+
+## Step 0 – Skeleton & deploy
+- Delegated: project scaffolding (config validation, bot, health endpoint, entry point).
+- Verified: config fail-fast behaviour, webhook vs. polling modes, and the deployed bot end to end.
+- Corrected: the generated .gitignore did not exclude OS files (.DS_Store); fixed in a follow-up commit.
 
 ## Step 1 – Mock Meta Ads API
-- Designed the scenarios, data defects and failure-injection behaviour, then used Claude Code to
-  implement the service and generator tests from that spec.
-- Verified the generated data manually against the spec (30-day window, burner spend/conversions,
-  outage day, negative spend, idempotent replay, write-then-500 failure), locally and on Railway.
+- Delegated: implementation of the mock service and generator tests from my spec.
+- Chose differently: the AI suggested mirroring Meta's exact response format (numbers as strings,
+  nested actions[] arrays). I chose a simple flat schema plus a small set of explicit, documented
+  defects. It keeps the focus on how the agent handles bad data, not on format plumbing.
+- Verified: 30-day rolling window, scenario shapes (fatigue, burner, outage), each injected defect,
+  idempotent replay, and the write-then-500 failure path, both locally and on Railway.
