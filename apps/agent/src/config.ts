@@ -17,7 +17,8 @@ const EnvSchema = z
     MOCK_API_URL: z.url({ error: "Required, must be a URL" }),
     MOCK_API_TOKEN: z.string({ error: "Required" }).min(16),
     AD_ACCOUNT_ID: z.string().min(1).default("act_1001"),
-    OPENROUTER_API_KEY: z.string({ error: "Required" }).min(1),
+    // Checked at startup so a mis-pasted value (quotes, "Bearer ", a whole .env line) fails fast.
+    OPENROUTER_API_KEY: z.string({ error: "Required" }).trim().startsWith("sk-or-", "Must be the key itself, starting with sk-or-"),
     OPENROUTER_MODEL: z.string().min(1).default("anthropic/claude-haiku-5.5"),
   })
   .transform((env, ctx) => {
