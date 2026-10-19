@@ -91,3 +91,33 @@
 - Deployment lesson: when a new required variable is added, set and apply it in Railway before pushing
   the code that requires it; otherwise the new deploy refuses to start.
 
+## Step 6 – Pause with human approval
+- The model never pauses anything. Its only write-related tool is propose_pause, which creates a
+  pending request in MongoDB. The pause itself is executed by our code, and only after a human clicks
+  Approve in Telegram.
+- The approval card shows the ad set, its current status and daily budget, the last 7 days' spend,
+  conversions, CPA and ROAS, the expected impact, the agent's reason, who asked and when it expires.
+  The numbers are read from the API by our code when the request is created, not written by the
+  model, so the approver is not shown invented figures. Only the reason is the model's text.
+- Approvers register with /register <code>. The code is shared with testers; it is a demo-level
+  control. In production I would use per-user invites or SSO.
+- Any registered approver can approve, including the requester: the requirement is that a human
+  approves the specific action. A real deployment might require a second person.
+- Approval is an atomic MongoDB update (pending → executing only if still pending and not expired),
+  so a double click or two approvers at once can only execute the action once.
+- Before acting, the ad set's status is read again: if it was paused by hand meanwhile, nothing is sent.
+- The pause request is sent once with an Idempotency-Key (pause-<request id>), never retried blindly.
+- After any response, success or error, the real status is read back (reconcile). If the API failed
+  halfway but the ad set is paused, the result is "succeeded" with a note; if it is still active,
+  "failed"; if the status cannot be read, "unknown" with an instruction to check manually.
+- States: pending → executing → succeeded | failed | unknown, or pending → rejected | expired.
+  I merged "approved" into "executing": the atomic claim is what matters.
+- Requests expire after 2 hours. Expiry is checked when someone clicks, not by a background job:
+  an old card keeps its buttons, but clicking it does nothing except mark it expired.
+- Every step is written to an audit log (created, approved, rejected, expired, succeeded, failed,
+  unknown, approver registered, failed registration).
+- One pending request per ad set; asking again returns the existing request.
+- Only pausing is supported. The brief asks for at least one action; one complete, safe action is
+  better than two half-done ones.
+- Agent state uses the same Atlas cluster as the mock, in a separate database (agent vs mock_meta).
+
