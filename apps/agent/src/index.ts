@@ -3,6 +3,7 @@ import express from "express";
 import { webhookCallback } from "grammy";
 import { bot } from "./bot.js";
 import { config } from "./config.js";
+import { mongo } from "./db.js";
 import { logger } from "./logger.js";
 import { app } from "./server.js";
 
@@ -14,6 +15,10 @@ function listen(port: number): Promise<Server> {
 
 async function main(): Promise<void> {
   const { webhook } = config;
+
+  // Connect before accepting traffic, so a bad MONGODB_URI stops the service with a clear error.
+  await mongo.connect();
+  logger.info({ db: config.mongo.db }, "MongoDB connected");
 
   if (webhook) {
     // grammY's express adapter reads the update from req.body, so parse JSON first.
@@ -45,6 +50,7 @@ async function main(): Promise<void> {
   const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
     logger.info({ signal }, "Shutting down");
     await bot.stop();
+    await mongo.close();
     server.close((err) => {
       if (err) {
         logger.error({ err }, "Error while closing HTTP server");

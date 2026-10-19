@@ -20,6 +20,10 @@ const EnvSchema = z
     // Checked at startup so a mis-pasted value (quotes, "Bearer ", a whole .env line) fails fast.
     OPENROUTER_API_KEY: z.string({ error: "Required" }).trim().startsWith("sk-or-", "Must be the key itself, starting with sk-or-"),
     OPENROUTER_MODEL: z.string().min(1).default("anthropic/claude-haiku-5.5"),
+    MONGODB_URI: z.string({ error: "Required" }).trim().startsWith("mongodb", "Must be a MongoDB connection string"),
+    MONGODB_DB: z.string().min(1).default("agent"),
+    // Shared with testers so they can /register as approvers. Long enough not to be guessed.
+    APPROVER_CODE: z.string({ error: "Required" }).trim().min(12, "Must be at least 12 characters"),
   })
   .transform((env, ctx) => {
     let webhook: { url: string; secret: string } | undefined;
@@ -54,6 +58,11 @@ const EnvSchema = z
         apiKey: env.OPENROUTER_API_KEY,
         model: env.OPENROUTER_MODEL,
       },
+      mongo: {
+        uri: env.MONGODB_URI,
+        db: env.MONGODB_DB,
+      },
+      approverCode: env.APPROVER_CODE,
     };
   });
 
