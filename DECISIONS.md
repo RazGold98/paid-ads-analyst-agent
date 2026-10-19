@@ -11,9 +11,15 @@
 - Data is generated relative to "today" so it stays fresh during the 10-day test window.
 
 ## Step 0 – Skeleton & deploy
-- Monorepo: apps/agent + apps/mock-meta-api, each deployed as its own Railway service.
+- Monorepo: apps/agent (+ apps/mock-meta-api next), each deployed as its own Railway service.
 - TypeScript/Node: the stack I know best and the stack of the role.
-- Webhook in production (protected by secret_token), polling locally; separate dev/prod bots so they don't conflict.
-- Config validated with zod at startup → fail fast with a clear error instead of failing mid-request.
-- Secrets live only in .env (gitignored) locally and in Railway environment variables in production.
-- Hosting: Railway (always-on, deploys from GitHub). 
+- Telegram: webhook in production (protected by secret_token so only Telegram can call it),
+  long-polling locally (no public URL on my laptop). Separate dev/prod bots so local
+  development never breaks the deployed bot.
+- Config validated with zod at startup → fail fast. This caught a real issue during deploy:
+  an invalid NODE_ENV value made the service refuse to start with a clear error,
+  instead of failing later at runtime.
+- Secrets: .env (gitignored) locally, Railway environment variables in production. Never committed.
+- Hosting: Railway (always-on, auto-deploys on push to main). Currently on the trial
+  ($5 credit / 30 days); will confirm plan + monthly cost before submitting.
+- /health endpoint for basic liveness checks.
