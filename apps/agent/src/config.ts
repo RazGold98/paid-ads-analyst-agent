@@ -14,6 +14,9 @@ const EnvSchema = z
       .string()
       .regex(/^[A-Za-z0-9_-]{1,256}$/, "Must be 1-256 chars of A-Z, a-z, 0-9, _ or -")
       .optional(),
+    MOCK_API_URL: z.url({ error: "Required, must be a URL" }),
+    MOCK_API_TOKEN: z.string({ error: "Required" }).min(16),
+    AD_ACCOUNT_ID: z.string().min(1).default("act_1001"),
   })
   .transform((env, ctx) => {
     let webhook: { url: string; secret: string } | undefined;
@@ -39,6 +42,11 @@ const EnvSchema = z
       port: env.PORT,
       telegramBotToken: env.TELEGRAM_BOT_TOKEN,
       webhook,
+      adsApi: {
+        baseUrl: env.MOCK_API_URL.replace(/\/+$/, ""),
+        token: env.MOCK_API_TOKEN,
+        accountId: env.AD_ACCOUNT_ID,
+      },
     };
   });
 
