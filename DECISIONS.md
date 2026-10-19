@@ -23,14 +23,17 @@
 
 ## Step 1 – Mock Meta Ads API
 - Separate service with bearer-token auth: pausing an ad set is a real network call to an external system.
-- Deterministic generator (seeded by ad set + date) over a rolling 30-day window ending yesterday:
-  stable numbers for evals, always-fresh data during the test window.
+- The data is a static, human-readable fixture (src/data/insights.fixture.json): 6 ad sets x 30 days.
+  Rows are keyed by "days_ago" and mapped to real dates at request time, so the data always ends
+  yesterday and stays fresh during the 10-day test window, while staying fully deterministic for evals.
+- I first generated the data at runtime from scenario formulas, then replaced it with a static fixture:
+  same numbers, but anyone can open the file and see exactly what the API returns.
 - Planted scenarios with known correct interpretations (apps/mock-meta-api/SCENARIOS.md):
   creative fatigue, healthy winner, budget burner, small sample, tracking outage,
   and a prompt-injection string inside an ad set name.
-- Deliberate data defects (missing day, duplicate row, null value, negative spend, number as string)
-  so the agent's data-cleaning layer has real work to do.
-- Only ad set statuses are persisted (MongoDB Atlas); insights are recomputed on each request,
+- Deliberate data defects written directly into the fixture (missing day, duplicate row, null value,
+  negative spend, number as string) so the agent's data-cleaning layer has real work to do.
+- Only ad set statuses are persisted (MongoDB Atlas); insights come from the fixture,
   so there is nothing to keep in sync.
 - Status changes require an Idempotency-Key, so a retry after a failure never applies an action twice.
 - Failure injection (FAIL_PAUSE_ADSET_IDS) applies the change and then returns 500, to exercise the
