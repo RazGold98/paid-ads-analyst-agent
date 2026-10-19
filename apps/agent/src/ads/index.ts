@@ -2,9 +2,12 @@ import { config } from "../config.js";
 import { AdsApiClient } from "./client.js";
 import { accountOverview, comparePeriods, getPerformance, listAdSets } from "./tools.js";
 
-/** The ads tools wired to the configured API, ready for the agent to call. */
-export function createAdsTools() {
-  const client = new AdsApiClient(config.adsApi);
+export function createAdsClient(): AdsApiClient {
+  return new AdsApiClient(config.adsApi);
+}
+
+/** The ads tools wired to an API client, ready for the agent to call. */
+export function createAdsTools(client: AdsApiClient = createAdsClient()) {
   return {
     listAdSets: () => listAdSets(client),
     getPerformance: (args?: Parameters<typeof getPerformance>[1]) => getPerformance(client, args),
@@ -14,5 +17,5 @@ export function createAdsTools() {
 }
 
 export type AdsTools = ReturnType<typeof createAdsTools>;
-export { AdsApiError } from "./client.js";
+export { AdsApiClient, AdsApiError } from "./client.js";
 export type * from "./types.js";

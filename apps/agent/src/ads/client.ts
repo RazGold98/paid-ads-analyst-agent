@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AdSet, Campaign, RawInsightRow, Source } from "./types.js";
+import type { AdSet, AdSetStatus, Campaign, RawInsightRow, Source } from "./types.js";
 
 export type AdsApiErrorCode = "UNAUTHORIZED" | "NOT_FOUND" | "TIMEOUT" | "NETWORK" | "UPSTREAM" | "BAD_REQUEST";
 
@@ -67,6 +67,12 @@ const RawInsightRowSchema: z.ZodType<RawInsightRow> = z.object({
   conversion_value: NumberLike.nullable(),
 });
 
+const StatusResponseSchema = z.object({
+  id: z.string(),
+  status: z.enum(["ACTIVE", "PAUSED"]),
+  previous_status: z.enum(["ACTIVE", "PAUSED"]),
+});
+
 const listOf = <T extends z.ZodType>(item: T) => z.object({ data: z.array(item) });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -126,6 +132,31 @@ export class AdsApiClient {
     return { data: data.data, source };
   }
 
+  /**
+   * Changes an ad set's status. Sent once, never retried here: after an error the caller reads the
+   * real status instead (see actions/pause.ts). The idempotency key makes an accidental resend harmless.
+   */
+  async setAdSetStatus(
+    id: string,
+    status: AdSetStatus,
+    idempotencyKey: string,
+  ): Promise<Fetched<{ status: AdSetStatus; previousStatus: AdSetStatus }>> {
+    const endpoint = `/v1/adsets/${encodeURIComponent(id)}/status`;
+    const body = await this.request(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "idempotency-key": idempotencyKey },
+      body: JSON.stringify({ status }),
+    });
+    const parsed = StatusResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new AdsApiError({ code: "UPSTREAM", message: `Unexpected response from ${endpoint}`, retryable: false });
+    }
+    return {
+      data: { status: parsed.data.status, previousStatus: parsed.data.previous_status },
+      source: { endpoint, params: { status }, fetchedAt: new Date().toISOString() },
+    };
+  }
+
   /** GET with retries on network errors, timeouts and 5xx (never on 4xx). */
   private async get<S extends z.ZodType>(
     endpoint: string,
@@ -160,14 +191,19 @@ export class AdsApiClient {
   }
 
   /** One HTTP attempt with a timeout; returns the parsed JSON body or throws AdsApiError. */
-  private async request(url: string): Promise<unknown> {
+  private async request(
+    url: string,
+    init: { method?: "GET" | "POST"; headers?: Record<string, string>; body?: string } = {},
+  ): Promise<unknown> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       let res: Response;
       try {
         res = await fetch(url, {
-          headers: { authorization: `Bearer ${this.token}`, accept: "application/json" },
+          method: init.method ?? "GET",
+          headers: { authorization: `Bearer ${this.token}`, accept: "application/json", ...init.headers },
+          body: init.body,
           signal: controller.signal,
         });
       } catch (err) {
