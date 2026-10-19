@@ -22,3 +22,15 @@ How I used AI tools during the build, what I verified myself, and where I chose 
   fixture. I replaced it with a static JSON fixture (same data), keeping only the days_ago -> date mapping.
 - Verified: 30-day rolling window, scenario shapes (fatigue, burner, outage), each injected defect,
   idempotent replay, and the write-then-500 failure path, both locally and on Railway.
+
+  ## Steps 2–3 – Data layer
+- Delegated: implementation of the client, cleaning, metrics and tools from my spec, with unit tests.
+- Verified: each planted defect and scenario against the deployed mock via a smoke script
+  (npm run check:data): fatigue, burner, winner, small sample, tracking outage.
+- Corrected: the outage issue told the user that outage days were excluded from CPA and ROAS, but the
+  metrics still included them. I made the metrics match the report and added tests for it.
+- Corrected: comparePeriods with more than 15 days silently compared a full current period against a
+  truncated previous one (e.g. 20 vs 10 days). Found in code review; capped at 15 and added a test.
+- Chose differently: per-ad-set fetching was simpler, but it cannot detect an account-wide tracking
+  outage, so tools fetch the whole account and filter in code.
+
