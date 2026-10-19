@@ -16,6 +16,7 @@
     "ask": "tsx src/scripts/ask.ts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.0",
     "dotenv": "^18.0.8",
     "express": "^5.3.0",
     "grammy": "^1.46.0",

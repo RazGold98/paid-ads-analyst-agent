@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { z } from "zod";
+import { parseMcpKeys, type McpClient } from "./mcp/keys.js";
 
 dotenv.config({ quiet: true });
 
@@ -24,8 +25,20 @@ const EnvSchema = z
     MONGODB_DB: z.string().min(1).default("agent"),
     // Shared with testers so they can /register as approvers. Long enough not to be guessed.
     APPROVER_CODE: z.string({ error: "Required" }).trim().min(12, "Must be at least 12 characters"),
+    // Optional: when unset, the MCP endpoint is off. Format: name:key:scopes, comma-separated.
+    MCP_API_KEYS: z.string().optional(),
   })
   .transform((env, ctx) => {
+    let mcpClients: McpClient[] = [];
+    if (env.MCP_API_KEYS) {
+      try {
+        mcpClients = parseMcpKeys(env.MCP_API_KEYS);
+      } catch (err) {
+        ctx.addIssue({ code: "custom", path: ["MCP_API_KEYS"], message: (err as Error).message });
+        return z.NEVER;
+      }
+    }
+
     let webhook: { url: string; secret: string } | undefined;
 
     if (env.PUBLIC_URL) {
@@ -63,6 +76,7 @@ const EnvSchema = z
         db: env.MONGODB_DB,
       },
       approverCode: env.APPROVER_CODE,
+      mcpClients,
     };
   });
 
