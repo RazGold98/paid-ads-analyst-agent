@@ -25,7 +25,7 @@ const EnvSchema = z
     MONGODB_DB: z.string().min(1).default("agent"),
     // Shared with testers so they can /register as approvers. Long enough not to be guessed.
     APPROVER_CODE: z.string({ error: "Required" }).trim().min(12, "Must be at least 12 characters"),
-    // Monthly cap for model spend. The $50 total also covers hosting (~$5-10 on Railway).
+    // Monthly cap for model spend. The $50 total also covers hosting (about $5 on Railway Hobby).
     MONTHLY_BUDGET_USD: z.coerce.number().positive().default(40),
     // Daily report: local time and time zone of the team.
     REPORT_TIME: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Must be HH:MM (24h)").default("08:00"),
