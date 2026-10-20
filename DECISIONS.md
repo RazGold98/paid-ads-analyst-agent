@@ -121,3 +121,65 @@
   better than two half-done ones.
 - Agent state uses the same Atlas cluster as the mock, in a separate database (agent vs mock_meta).
 
+## Step 7 – MCP server
+- Other agents reach the same agent over MCP (official SDK, Streamable HTTP at POST /mcp, on the same
+  service). It reuses the same tools, validation, agent loop and approval flow as Telegram; nothing is
+  duplicated.
+- Who may trigger the pause via MCP: nobody. MCP clients can at most propose. A proposal becomes the same
+  pending request as in Telegram, with the same card, and only a registered human approves it there.
+- Each client has an API key with scopes, set in MCP_API_KEYS as name:key:scopes. "read" gives the data
+  tools and ask_analyst; "propose" adds propose_pause and get_request_status. There is no scope, and no
+  tool, that approves or executes.
+- For every request I build a server that registers only the tools the key allows: a read-only client
+  does not even see propose_pause, rather than seeing it and being refused.
+- ask_analyst runs the agent without the pause tool, so a question ("pause everything") can never be
+  used to get around the client's scopes.
+- Keys are kept in memory only as SHA-256 hashes and compared in constant time; unknown scopes or keys
+  shorter than 24 characters stop the service at startup. MCP is off when MCP_API_KEYS is empty.
+- Stateless mode (a fresh server per request, no sessions): simple, and enough for request/response use.
+
+## Step 8 – Budget guard
+- The full cost must stay under $50/month. I cap model spend at $40 (MONTHLY_BUDGET_USD) and leave the
+  rest for hosting.
+- The guard wraps the model function itself, so every channel (Telegram, MCP, GUI) goes through it and
+  none can skip it. The agent loop did not change.
+- Before each call it checks the month's spend; after each call it records the cost reported by
+  OpenRouter. If no cost is reported, it is estimated from tokens, never counted as 0.
+- Alerts to the approvers at 70%, 85% and 100%, once per threshold per month (a unique MongoDB id).
+  At 100% the agent stops answering and says why; approvals keep working because they do not use the model.
+- The check runs before each call, so the overshoot is at most one call (well under a cent). Finishing an
+  answer already in progress is better than cutting it off.
+- Every reply is capped at 4,096 tokens (max_tokens), so a single call has a bounded cost.
+- Two layers: my guard at $40 with early warnings, and OpenRouter's own limit (account credit and the
+  key's limit) as a hard stop. Running out of OpenRouter credit is an operational risk to monitor:
+  it happened during development, when the free balance ran out.
+- Measured during development: 60 model calls, 238K tokens, $0.04 in total, about $0.0007 per call and
+  $0.002 per question. That supports the estimate of about $4–5/month for 5 users × 20 questions × 22 days.
+
+## Step 9 – Scheduled morning report
+- Every morning at 08:00 Israel time (REPORT_TIME, REPORT_TIMEZONE) the approvers get a short report of
+  what needs attention: last 7 days vs the 7 before, for every active ad set.
+- The anomalies are found by fixed rules, not by the model: high spend with fewer than 10 conversions,
+  ROAS under 1, CPA up 30% or more with at least 10 conversions, and data problems (suspected tracking
+  outage, missing day). A report nobody reviews before it is sent must be predictable and exact, and I
+  had already seen the model compute a number wrong. The report says what; the agent explains why when
+  someone asks.
+- The rules use the same tools as the agent, so cleaning, outage exclusion and rounding are identical.
+- Scheduling: a check every minute instead of one long timer. A timer is lost on every deploy; this
+  catches up after a deploy or an outage at 08:00. A unique daily id in MongoDB makes sure the report is
+  sent once per day; if sending fails the id is released and the next check retries.
+- /report shows the report on demand, so testers do not have to wait for the morning.
+
+## Step 10 – GUI
+- A React page (Vite) with the chat, the pause requests, the action log and the budget meter.
+- Built into dist/public by the same `npm run build` and served by the agent's Express server: one
+  service, one URL, nothing extra to deploy.
+- The API under /api is a thin layer over what already exists (the agent loop, the action store, the
+  budget guard); there is no new business logic.
+- Login is the approver code, because the chat costs money and should not be open to the internet.
+  Testers already receive this code.
+- Approving stays in Telegram: only there do I know which registered person is approving. The GUI shows
+  requests and their state; a pause asked for in the GUI goes to the Telegram approvers like any other.
+- The browser keeps the conversation and sends the last 6 messages, so the server stays stateless.
+- Answers are rendered as plain text, so text from the API (such as the injected ad set name) can never
+  run as HTML.
