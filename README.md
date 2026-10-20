@@ -104,7 +104,7 @@ Use a separate Telegram bot for development, so local runs never interfere with 
 | Command (in apps/agent) | What it does |
 |---|---|
 | `npm test` | unit and integration tests (no network, no model) |
-| `npm run eval` | 5 evals against the real model and the configured mock API (costs under a cent) |
+| `npm run eval` | 6 evals against the real model and the configured mock API: grounded, reasoning, refusal, small sample, injection, missing data (costs under a cent) |
 | `npm run ask -- "question"` | ask the agent once from the terminal |
 | `npm run check:data` | print the cleaned data and data issues from the mock API |
 | `npm run dev:web` | the web page with hot reload, forwarding /api to the local agent |
