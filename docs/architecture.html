@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Architecture</title>
+<!-- Source of ARCHITECTURE.pdf. Regenerate: open in Chrome and print to PDF (A4 landscape, no margins). -->
+<style>
+@page { size: A4 landscape; margin: 0; }
+html, body { margin: 0; background: #fff; }
+svg { width: 297mm; height: 210mm; display: block; font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+.title { font-size: 28px; font-weight: 700; fill: #111827; }
+.sub { font-size: 15px; fill: #4b5563; }
+.group { fill: #f9fafb; stroke: #d1d5db; stroke-width: 1.5; }
+.g { font-size: 15px; font-weight: 700; fill: #374151; }
+.node { fill: #ffffff; stroke: #9ca3af; stroke-width: 1.4; }
+.people { fill: #eef2ff; stroke: #818cf8; stroke-width: 1.4; }
+.ext { fill: #f0fdf4; stroke: #4ade80; stroke-width: 1.4; }
+.approve { fill: #fff7ed; stroke: #f97316; stroke-width: 2.4; }
+.danger { fill: #fffbeb; stroke: #f59e0b; stroke-width: 1.6; stroke-dasharray: 6 4; }
+.secret { fill: #fef2f2; stroke: #f87171; stroke-width: 1.6; }
+.t { font-weight: 700; fill: #111827; }
+.l { font-size: 13.5px; fill: #374151; }
+.b { font-size: 13.5px; font-weight: 700; fill: #9a3412; }
+.a { fill: none; stroke: #4b5563; stroke-width: 1.6; }
+.al { font-size: 12px; fill: #4b5563; font-style: italic; }
+</style></head><body>
+<svg viewBox="0 0 1600 1131" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4b5563"/></marker>
+<marker id="hs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4b5563"/></marker>
+</defs>
+<text class="title" x="30" y="44">Paid Ads Analyst Agent — architecture</text>
+<text class="sub" x="30" y="70">Two Railway services from one repo. The model can read and propose; only a registered human in Telegram can approve a change.</text>
+<rect class="group" x="20" y="80" width="290" height="800" rx="14"/>
+<text class="g" x="36" y="101">People and clients</text>
+<rect class="group" x="340" y="80" width="820" height="800" rx="14"/>
+<text class="g" x="356" y="101">Agent service · Railway · Node 20 + TypeScript (apps/agent)</text>
+<rect class="group" x="1190" y="80" width="390" height="800" rx="14"/>
+<text class="g" x="1206" y="101">External systems</text>
+<rect class="people" x="35" y="125" width="260" height="90" rx="10"/>
+<text class="t" x="49" y="151" font-size="17">Media buyers (~5)</text>
+<text class="l" x="49" y="175">Ask questions in Telegram</text>
+<text class="l" x="49" y="194">or on the web page</text>
+<rect class="people" x="35" y="255" width="260" height="90" rx="10"/>
+<text class="t" x="49" y="281" font-size="17">Team in a browser</text>
+<text class="l" x="49" y="305">React page: chat, requests,</text>
+<text class="l" x="49" y="324">action log, budget meter</text>
+<rect class="people" x="35" y="385" width="260" height="90" rx="10"/>
+<text class="t" x="49" y="411" font-size="17">Other agents</text>
+<text class="l" x="49" y="435">MCP clients with an API key</text>
+<text class="l" x="49" y="454">scope: read or read+propose</text>
+<rect class="approve" x="35" y="540" width="260" height="150" rx="10"/>
+<text class="t" x="49" y="566" font-size="17">Approvers (humans)</text>
+<text class="l" x="49" y="590">Join with /register + code</text>
+<text class="l" x="49" y="609">Get a card for each request</text>
+<text class="b" x="49" y="628">Approve or Reject here</text>
+<text class="b" x="49" y="647">— the only place a change</text>
+<text class="b" x="49" y="666">   is authorised</text>
+<rect class="node" x="360" y="125" width="220" height="90" rx="10"/>
+<text class="t" x="374" y="151" font-size="17">Telegram bot</text>
+<text class="l" x="374" y="175">/telegram/webhook</text>
+<text class="l" x="374" y="194">secret_token check</text>
+<rect class="node" x="360" y="255" width="220" height="90" rx="10"/>
+<text class="t" x="374" y="281" font-size="17">Web API + page</text>
+<text class="l" x="374" y="305">/api and the React build</text>
+<text class="l" x="374" y="324">access code login</text>
+<rect class="node" x="360" y="385" width="220" height="90" rx="10"/>
+<text class="t" x="374" y="411" font-size="17">MCP endpoint</text>
+<text class="l" x="374" y="435">POST /mcp (Streamable HTTP)</text>
+<text class="l" x="374" y="454">key → scopes → allowed tools</text>
+<rect class="node" x="610" y="115" width="330" height="120" rx="10"/>
+<text class="t" x="624" y="141" font-size="17">Agent loop (runAgent)</text>
+<text class="l" x="624" y="165">System prompt: numbers only from tools,</text>
+<text class="l" x="624" y="184">API text is data, fact vs hypothesis</text>
+<text class="l" x="624" y="203">Max 5 model calls per question</text>
+<text class="l" x="624" y="222">Max 1 pause proposal per question</text>
+<rect class="node" x="960" y="115" width="180" height="120" rx="10"/>
+<text class="t" x="974" y="141" font-size="17">Budget guard</text>
+<text class="l" x="974" y="165">Wraps every model call</text>
+<text class="l" x="974" y="184">$40/month cap</text>
+<text class="l" x="974" y="203">alerts 70 / 85 / 100%</text>
+<text class="l" x="974" y="222">then a hard stop</text>
+<rect class="node" x="610" y="255" width="530" height="115" rx="10"/>
+<text class="t" x="624" y="281" font-size="17">Read-only tools + data layer</text>
+<text class="l" x="624" y="305">list_adsets · get_performance · compare_periods · account_overview</text>
+<text class="l" x="624" y="324">client (timeout, GET retries) → clean (never invents data) → metrics</text>
+<text class="l" x="624" y="343">Every result = { result, issues, sources }</text>
+<rect class="danger" x="610" y="390" width="530" height="85" rx="10"/>
+<text class="t" x="624" y="416" font-size="17">propose_pause</text>
+<text class="l" x="624" y="440">Creates a pending request with numbers read by our code.</text>
+<text class="b" x="624" y="459">Nothing in the ad account changes here.</text>
+<rect class="approve" x="360" y="510" width="780" height="190" rx="10"/>
+<text class="t" x="374" y="536" font-size="17">Approval and execution (actions)</text>
+<text class="l" x="374" y="560">1. pending request in MongoDB (expires in 2 h, one per ad set)</text>
+<text class="l" x="374" y="579">2. card to every approver in Telegram → a human clicks Approve</text>
+<text class="l" x="374" y="598">3. atomic claim: pending → executing (a double click runs once)</text>
+<text class="l" x="374" y="617">4. re-read the ad set: already paused? then nothing to do</text>
+<text class="l" x="374" y="636">5. POST pause with Idempotency-Key, sent once</text>
+<text class="l" x="374" y="655">6. read the real status back (reconcile) → succeeded / failed / unknown</text>
+<text class="l" x="374" y="674">7. every step written to the audit log; cards updated</text>
+<rect class="node" x="360" y="720" width="380" height="140" rx="10"/>
+<text class="t" x="374" y="746" font-size="17">Scheduler</text>
+<text class="l" x="374" y="770">Checks every minute</text>
+<text class="l" x="374" y="789">Morning report at 08:00 Asia/Jerusalem</text>
+<text class="l" x="374" y="808">Fixed rules (no model) on the same tools</text>
+<text class="l" x="374" y="827">Once per day: unique id in MongoDB</text>
+<rect class="node" x="760" y="720" width="380" height="140" rx="10"/>
+<text class="t" x="774" y="746" font-size="17">Quality</text>
+<text class="l" x="774" y="770">67 tests (no network, fake model)</text>
+<text class="l" x="774" y="789">5 evals on the real model: grounded,</text>
+<text class="l" x="774" y="808">reasoning, refusal, small sample, injection</text>
+<text class="l" x="774" y="827">Config validated at startup (fail fast)</text>
+<rect class="ext" x="1205" y="115" width="360" height="120" rx="10"/>
+<text class="t" x="1219" y="141" font-size="17">OpenRouter → Claude Haiku 5.5</text>
+<text class="l" x="1219" y="165">Chat completions with tool calling</text>
+<text class="l" x="1219" y="184">max_tokens 4096 per call</text>
+<text class="l" x="1219" y="203">Cost reported per call → budget guard</text>
+<rect class="ext" x="1205" y="255" width="360" height="300" rx="10"/>
+<text class="t" x="1219" y="281" font-size="17">Mock Meta Ads API (apps/mock-meta-api)</text>
+<text class="l" x="1219" y="305">Separate Railway service, bearer token</text>
+<text class="l" x="1219" y="324"></text>
+<text class="l" x="1219" y="343">GET adsets, insights (30 days to yesterday)</text>
+<text class="l" x="1219" y="362">POST adset status + Idempotency-Key</text>
+<text class="l" x="1219" y="381"></text>
+<text class="l" x="1219" y="400">Planted scenarios: fatigue, budget burner,</text>
+<text class="l" x="1219" y="419">winner, small sample, tracking outage,</text>
+<text class="l" x="1219" y="438">prompt injection in an ad set name</text>
+<text class="l" x="1219" y="457">Defects: missing day, duplicate, null,</text>
+<text class="l" x="1219" y="476">negative spend, number as string</text>
+<text class="l" x="1219" y="495">Failure injection: pause writes, then 500</text>
+<rect class="ext" x="1205" y="575" width="360" height="285" rx="10"/>
+<text class="t" x="1219" y="601" font-size="17">MongoDB Atlas</text>
+<text class="b" x="1219" y="625">database agent</text>
+<text class="l" x="1219" y="644">action_requests · approvers · audit_log</text>
+<text class="l" x="1219" y="663">llm_usage · budget_alerts · scheduled_runs</text>
+<text class="l" x="1219" y="682"></text>
+<text class="b" x="1219" y="701">database mock_meta</text>
+<text class="l" x="1219" y="720">adset_status · idempotency</text>
+<text class="l" x="1219" y="739"></text>
+<text class="l" x="1219" y="758">Same cluster, separate databases</text>
+<path class="a" d="M 295 170 L 358 170" marker-end="url(#h)"/>
+<path class="a" d="M 295 300 L 358 300" marker-end="url(#h)"/>
+<path class="a" d="M 295 430 L 358 430" marker-end="url(#h)"/>
+<path class="a" d="M 580 170 L 595 170 M 580 300 L 595 300 M 580 430 L 595 430 M 595 430 L 595 170"/>
+<path class="a" d="M 595 175 L 608 175" marker-end="url(#h)"/>
+<path class="a" d="M 940 175 L 958 175" marker-end="url(#h)"/>
+<path class="a" d="M 1140 175 L 1203 175" marker-end="url(#h)"/>
+<text class="al" x="1152" y="166">model</text>
+<path class="a" d="M 775 235 L 775 253" marker-end="url(#h)"/>
+<path class="a" d="M 1140 312 L 1203 312" marker-end="url(#h)"/>
+<text class="al" x="1158" y="302">GET</text>
+<path class="a" d="M 875 475 L 875 508" marker-end="url(#h)"/>
+<path class="a" d="M 1140 530 L 1203 530" marker-end="url(#h)"/>
+<text class="al" x="1155" y="520">POST</text>
+<path class="a" d="M 1140 650 L 1203 650" marker-end="url(#h)"/>
+<text class="al" x="1153" y="640">state</text>
+<path class="a" d="M 358 615 L 297 615" marker-end="url(#h)" marker-start="url(#hs)"/>
+<text class="al" x="300" y="640">card /</text>
+<text class="al" x="300" y="655">click</text>
+<path class="a" d="M 360 790 L 165 790 L 165 692" marker-end="url(#h)"/>
+<text class="al" x="190" y="782">daily report</text>
+<rect class="secret" x="20" y="900" width="1560" height="175" rx="10"/>
+<text class="t" x="34" y="926" font-size="17">Where secrets live</text>
+<text class="l" x="34" y="950">Production: Railway variables, per service. Local development: .env files (gitignored). Never in the repository.</text>
+<text class="l" x="34" y="969">Agent: TELEGRAM_BOT_TOKEN · TELEGRAM_WEBHOOK_SECRET · OPENROUTER_API_KEY · MONGODB_URI · MOCK_API_TOKEN · APPROVER_CODE · MCP_API_KEYS</text>
+<text class="l" x="34" y="988">Mock API: MOCK_API_TOKEN · MONGODB_URI</text>
+<text class="l" x="34" y="1007">MCP keys are held in memory only as SHA-256 hashes and compared in constant time; the approver code is compared the same way.</text>
+<text class="l" x="34" y="1026">The access code and an MCP key are given to testers by email, not in the README. Config is validated at startup: a missing or malformed secret stops the service.</text>
+<text class="l" x="34" y="1045">Telegram can only reach the webhook with the secret token; the mock API rejects calls without the bearer token.</text>
+</svg></body></html>
