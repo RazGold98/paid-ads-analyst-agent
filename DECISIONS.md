@@ -37,9 +37,9 @@
   total, about $0.0007 per call. A question takes 2–3 calls, so about $0.002 per question.
   2,200 × $0.002 ≈ $4.40 per month. Even if real questions were three times heavier, about $13.
 - The morning report uses no model (fixed rules), so it costs nothing in model usage.
-- Hosting: Railway Hobby, $5/month including $5 of usage. Two small, mostly idle Node services; at
-  about $10 per GB-month of memory, roughly 0.15 GB each is about $3, plus a little CPU, within the
-  included $5. MongoDB Atlas free tier: $0.
+- Hosting: a real deployment would use Railway Hobby, $5/month including $5 of usage (the demo runs on
+  the trial credit). Two small, mostly idle Node services; at about $10 per GB-month of memory, roughly
+  0.15 GB each is about $3, plus a little CPU, within the included $5. MongoDB Atlas free tier: $0.
 - Expected total: about $10/month. Worst case: the model is capped at $40 by the budget guard, plus
   hosting of about $5, which stays under $50.
 - Near the limit: alerts to the approvers at 70% and 85% of the model budget; at 100% the agent stops
@@ -79,8 +79,9 @@
 - Config validated with zod at startup → fail fast. This caught a real issue during deploy:
   an invalid NODE_ENV value made the service refuse to start with a clear error.
 - Secrets: .env (gitignored) locally, Railway environment variables in production. Never committed.
-- Hosting: Railway (always-on, auto-deploys on push to main), Hobby plan ($5/month including $5 of
-  usage); see the cost estimate above.
+- Hosting: Railway (always-on, auto-deploys on push to main). The demo runs on Railway's trial credit,
+  which covers the test period; a real deployment would use the Hobby plan (see the cost estimate above).
+
 
 
 ## Step 1 – Mock Meta Ads API
