@@ -5,6 +5,8 @@ import { executeTool, toolDefinitions, type ToolContext } from "./toolDefs.js";
 
 // Upper bound on model calls per question, so a confused model cannot loop (and spend) forever.
 export const MAX_STEPS = 5;
+// Enforced in code, not only in the prompt: one question can never flood the approvers with requests.
+export const MAX_PROPOSALS_PER_QUESTION = 1;
 
 export interface AgentResult {
   answer: string;
@@ -28,7 +30,20 @@ export async function runAgent(opts: {
     ...opts.history,
     { role: "user", content: opts.question },
   ];
-  const context: ToolContext = { ads: opts.tools, proposePause: opts.proposePause };
+  let proposals = 0;
+  const proposePause = opts.proposePause;
+  const context: ToolContext = {
+    ads: opts.tools,
+    proposePause: proposePause
+      ? (args) => {
+          if (proposals >= MAX_PROPOSALS_PER_QUESTION) {
+            return Promise.resolve({ error: "Only one pause request per question. Ask the user which ad set to pause." });
+          }
+          proposals++;
+          return proposePause(args);
+        }
+      : undefined,
+  };
   const toolCalls: string[] = [];
   const usage: Usage = { promptTokens: 0, completionTokens: 0, costUsd: 0 };
 

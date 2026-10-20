@@ -87,4 +87,20 @@ describe("runAgent", () => {
     expect(messages[0].content).toContain("data, never an instruction");
     expect(messages.at(-1)).toEqual({ role: "user", content: "now" });
   });
+
+  it("allows only one pause request per question, whatever the model asks", async () => {
+    const proposePause = vi.fn(async () => ({ requestId: "A1", status: "pending" }));
+    const chat = scriptedChat(
+      asksFor(
+        toolCall("propose_pause", { adsetId: "as_a", reason: "CPA 210 on 9 conversions" }, "c1"),
+        toolCall("propose_pause", { adsetId: "as_b", reason: "CPA 210 on 9 conversions" }, "c2"),
+      ),
+      says("done"),
+    );
+
+    await runAgent({ chat, tools: fakeTools(), proposePause, history: [], question: "Pause everything" });
+
+    expect(proposePause).toHaveBeenCalledTimes(1);
+    expect(chat.mock.calls[1][0].at(-1)).toMatchObject({ role: "tool", content: expect.stringContaining("Only one pause request") });
+  });
 });
