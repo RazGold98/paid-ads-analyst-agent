@@ -44,6 +44,20 @@ describe("summarize", () => {
   });
 });
 
+describe("summarize frequency", () => {
+  it("is total impressions over total daily reach, and null without reach", () => {
+    // 1000/500 = 2.0 and 3000/1000 = 3.0 give (1000 + 3000) / (500 + 1000) = 2.67, weighted by reach.
+    const s = summarize([row({ impressions: 1000, reach: 500 }), row({ date: "2026-06-02", impressions: 3000, reach: 1000 })]);
+    expect(s.frequency).toBeCloseTo(2.667, 3);
+    expect(summarize([]).frequency).toBeNull();
+  });
+
+  it("is compared between periods, so a rise can be reported", () => {
+    const changes = compare(summarize([row({ reach: 300 })]), summarize([row({ reach: 600 })]));
+    expect(changes.frequency.changePct).toBeCloseTo(100);
+  });
+});
+
 describe("summarize with a tracking outage", () => {
   const normal = row({ date: "2026-06-01" });
   const outage = row({ date: "2026-06-02", conversions: 0, conversionValue: 0 });

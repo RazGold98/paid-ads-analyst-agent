@@ -36,7 +36,7 @@ printIssues(overview.issues);
 
 for (const adsetId of ["as_women_video", "as_broad_image"]) {
   const { result, issues } = await tools.comparePeriods({ adsetId, days: 7 });
-  const fmt: Record<string, (v: number | null) => string> = { spend: money, ctr: pct, cpa: money, roas: num, conversions: (v) => (v === null ? "–" : String(v)) };
+  const fmt: Record<string, (v: number | null) => string> = { spend: money, ctr: pct, cpa: money, roas: num, conversions: (v) => (v === null ? "–" : String(v)), frequency: num };
   console.log(
     `${adsetId}: ${result.current.period.since}..${result.current.period.until} vs ${result.previous.period.since}..${result.previous.period.until}`,
   );

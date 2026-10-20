@@ -42,8 +42,8 @@ function round(value: number | null, decimals: number): number | null {
   return Math.round(value * factor) / factor;
 }
 
-// Money to 2 decimals, ratios (ctr, roas) to 4.
-const DECIMALS: Record<ComparedMetric, number> = { spend: 2, ctr: 4, cpa: 2, roas: 4, conversions: 0 };
+// Money to 2 decimals, ratios (ctr, roas) to 4, frequency to 2.
+const DECIMALS: Record<ComparedMetric, number> = { spend: 2, ctr: 4, cpa: 2, roas: 4, conversions: 0, frequency: 2 };
 
 function roundSummary(s: Summary): Summary {
   return {
@@ -55,6 +55,7 @@ function roundSummary(s: Summary): Summary {
     cpa: round(s.cpa, 2),
     ctr: round(s.ctr, 4),
     roas: round(s.roas, 4),
+    frequency: round(s.frequency, 2),
   };
 }
 

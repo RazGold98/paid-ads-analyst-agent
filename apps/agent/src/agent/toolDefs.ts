@@ -39,7 +39,7 @@ const TOOLS: Record<string, Tool> = {
   }),
   get_performance: defineTool({
     description:
-      "Totals and ratios (spend, conversions, CTR, CPC, CPM, CPA, ROAS) for a date range. Defaults to the last 30 days. Optional filter by ad set or campaign.",
+      "Totals and ratios (spend, conversions, CTR, CPC, CPM, CPA, ROAS, frequency) for a date range. Defaults to the last 30 days. Optional filter by ad set or campaign.",
     args: z.object({ ...filter, since: date.optional(), until: date.optional() }),
     run: (ctx, args) => ctx.ads.getPerformance(args),
   }),

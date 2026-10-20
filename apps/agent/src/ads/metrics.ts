@@ -15,6 +15,9 @@ export interface Summary {
   cpm: number | null;
   cpa: number | null;
   roas: number | null;
+  // Average times a person saw the ads per day: total impressions / total daily reach.
+  // Rising frequency with falling CTR is the usual sign of creative fatigue.
+  frequency: number | null;
   days: number;
   // Rows whose spend was unknown, left out of spend-based metrics.
   excludedSpendDays: number;
@@ -24,7 +27,7 @@ export interface Summary {
   excludedOutageDays: number;
 }
 
-export type ComparedMetric = "spend" | "ctr" | "cpa" | "roas" | "conversions";
+export type ComparedMetric = "spend" | "ctr" | "cpa" | "roas" | "conversions" | "frequency";
 
 export interface Change {
   current: number | null;
@@ -67,6 +70,7 @@ export function summarize(rows: DailyRow[], outageDates: ReadonlySet<string> = n
     cpm: ratio(spend * 1000, sum(withSpend, (r) => r.impressions)),
     cpa: ratio(sum(trackedWithSpend, (r) => r.spend ?? 0), sum(trackedWithSpend, (r) => r.conversions)),
     roas: ratio(sum(withValue, (r) => r.conversionValue ?? 0), sum(withValue, (r) => r.spend ?? 0)),
+    frequency: ratio(impressions, sum(rows, (r) => r.reach)),
     days: new Set(rows.map((r) => r.date)).size,
     excludedSpendDays: rows.length - withSpend.length,
     excludedValueDays: rows.filter((r) => r.conversionValue === null).length,
@@ -87,6 +91,7 @@ export function compare(current: Summary, previous: Summary): Record<ComparedMet
     cpa: change("cpa"),
     roas: change("roas"),
     conversions: change("conversions"),
+    frequency: change("frequency"),
   };
 }
 
