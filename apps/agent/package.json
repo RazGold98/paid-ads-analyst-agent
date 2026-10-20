@@ -14,7 +14,8 @@
     "test": "vitest run",
     "check:data": "tsx src/scripts/check-data.ts",
     "ask": "tsx src/scripts/ask.ts",
-    "dev:web": "vite --config web/vite.config.ts"
+    "dev:web": "vite --config web/vite.config.ts",
+    "eval": "tsx src/evals/run.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.0",
