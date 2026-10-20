@@ -65,6 +65,10 @@ const ResponseSchema = z.object({
 
 const URL = "https://openrouter.ai/api/v1/chat/completions";
 
+// Caps each reply, so one call can never cost more than a few tenths of a cent. Without it OpenRouter
+// reserves credit for the model's maximum output (65k tokens). Answers use ~400-3,000 tokens.
+const MAX_TOKENS = 4096;
+
 export function createOpenRouterChat(opts: { apiKey: string; model: string; timeoutMs?: number }): ChatFn {
   const timeoutMs = opts.timeoutMs ?? 30_000;
 
@@ -79,7 +83,7 @@ export function createOpenRouterChat(opts: { apiKey: string; model: string; time
           "x-title": "Paid Ads Analyst Agent",
         },
         // usage.include asks OpenRouter to report the cost of this call (used by the budget guard).
-        body: JSON.stringify({ model: opts.model, messages, tools, usage: { include: true } }),
+        body: JSON.stringify({ model: opts.model, messages, tools, max_tokens: MAX_TOKENS, usage: { include: true } }),
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (err) {
