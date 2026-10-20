@@ -246,3 +246,37 @@
 - The browser keeps the conversation and sends the last 6 messages, so the server stays stateless.
 - Answers are rendered as plain text, so text from the API (such as the injected ad set name) can never
   run as HTML.
+
+
+
+## Understanding questions
+
+**1. An approved action starts and the external API call fails halfway. What happens, and what does the user see?**
+The pause request is sent once, with an Idempotency-Key, and is never retried blindly. If the API
+returns an error, I don't trust the error: the agent reads the ad set's real status back from the API.
+If it is paused, the action is recorded as succeeded, with a note that the API returned an error. If it
+is still active, it is recorded as failed. If the status cannot be read at all, it is recorded as
+unknown, with an instruction to check in Ads Manager before trying again. The approver's card in
+Telegram is updated with that result and the buttons are removed, the person who asked gets a message,
+and every step is in the audit log. Before sending, the request is moved from pending to executing in
+one atomic update, so a second click cannot run it again. I tested this in production with as_lookalike,
+which the mock API pauses and then answers with a 500: the card said "The API returned an error, but the
+ad set is paused".
+
+**2. The agent is live for a month. How would I find out it gives wrong answers before someone relies on them?**
+Today: the evals run the real model on questions with known answers (numbers checked against the source
+data, reasoning, refusals, missing data), and I run them on every prompt or model change. They already
+caught a real problem: the model created five pause requests for "pause all ad sets". Every answer is
+also logged with the tools it called and its cost, so any answer can be traced back to its data. What
+I would add next: an automatic check that every number in an answer appears in a tool result (an answer
+with a number from nowhere is the clearest sign of a wrong answer; I saw the model compute an account
+ROAS itself and get it wrong), running the evals every day on fresh data, a thumbs-down button in
+Telegram, and reading a small sample of real answers each week.
+
+**3. Which part am I least confident in, and why?**
+The model's consistency. The same question can get a different answer on another run: in a manual test
+"pause all ad sets" created no requests, and in the first eval run it created five. The prompt is
+guidance, not a guarantee, and six evals cannot cover every way a question can be asked. That is why
+the rules that matter are enforced in code and not only in the prompt: the model has no tool that
+changes anything, at most one pause request per question, every number is computed in code, and only a
+human approves. But how well it reasons about the data in a new situation is still the part I trust least.
