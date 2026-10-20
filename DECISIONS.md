@@ -1,4 +1,65 @@
 # Decisions
+## Who it's for and why an agent
+- Users: a media-buying team of about 5 people who run Meta ad campaigns for a client (here, the mock
+  account "Stride Footwear"). They ask questions in Telegram during the day, and the approvers among
+  them decide on changes.
+- What it makes easier: today, "why did CPA go up?" means opening Ads Manager, picking date ranges,
+  comparing ad sets by hand and noticing data problems (a tracking outage, a missing day) that quietly
+  distort the numbers. The agent does that in seconds, explains what changed, separates facts from
+  guesses, says how confident it is, and can pause a wasteful ad set once a human approves. A morning
+  report flags what needs attention without anyone asking.
+- Why an agent and not a dashboard: the questions are open-ended and different every time ("what
+  changed?", "is this ad set worth more budget?"). Answering them means choosing the right data,
+  comparing periods, reading the data issues and explaining them in plain language. That is what a
+  language model is good at. What it is not good at, I kept out of the model: every number is computed
+  in code, the morning report uses fixed rules, and only a human can approve a change.
+
+## Why this stack
+- TypeScript on Node 20 for both services and the web page: the stack of the role and the one I know
+  best, one language end to end, strict types, and zod to validate everything that comes from outside
+  (API responses, model tool arguments, configuration).
+- No agent framework: the agent loop is about 60 lines I can read and explain, and it is where the
+  safety limits live (max 5 model calls, one pause request per question, the budget guard).
+- OpenRouter with Claude Haiku 5.5: one API with the cost reported on every call, and the model is an
+  environment variable, so it can be switched without a code change. Haiku is cheap, reliable at tool
+  calling and resistant to prompt injection.
+- grammY for Telegram (webhook in production), the official MCP SDK, Express for the HTTP endpoints,
+  React with Vite for the web page, built and served by the same service.
+- MongoDB Atlas for agent state: free tier, document-shaped records (requests, audit log, usage), and
+  atomic conditional updates and unique ids that make "run once" guarantees simple.
+- Railway: always-on hosting, which the Telegram webhook and the scheduler need, auto-deploy on push,
+  and environment variables for secrets. Vitest for tests.
+
+## Cost estimate (model + hosting, target under $50/month)
+- Usage assumed by the brief: 5 people × 20 uses × 22 working days = 2,200 questions per month.
+  I count every question the same, whether it comes from Telegram, the web page or MCP.
+- Model, measured: during development OpenRouter reported 60 model calls, 238K tokens and $0.04 in
+  total, about $0.0007 per call. A question takes 2–3 calls, so about $0.002 per question.
+  2,200 × $0.002 ≈ $4.40 per month. Even if real questions were three times heavier, about $13.
+- The morning report uses no model (fixed rules), so it costs nothing in model usage.
+- Hosting: Railway Hobby, $5/month including $5 of usage. Two small, mostly idle Node services; at
+  about $10 per GB-month of memory, roughly 0.15 GB each is about $3, plus a little CPU, within the
+  included $5. MongoDB Atlas free tier: $0.
+- Expected total: about $10/month. Worst case: the model is capped at $40 by the budget guard, plus
+  hosting of about $5, which stays under $50.
+- Near the limit: alerts to the approvers at 70% and 85% of the model budget; at 100% the agent stops
+  answering and says why, while approvals keep working. OpenRouter's account credit and key limit are a
+  second, hard stop.
+
+## Where AI helped and where it was wrong
+- Helped: I used Claude Code to implement every step from my specs and decisions, to write tests,
+  and as a sounding board for trade-offs. Details per step are in [AI_NOTES.md](AI_NOTES.md).
+- Wrong or misleading, and caught by testing:
+  - The model looked at 30 days for "which ad set is wasting money?" and missed a problem from the
+    last week; fixed with a 7-day default and a comparison with the previous period.
+  - The model computed an account ROAS itself and got it wrong (2.39 instead of 2.44); it may now only
+    use numbers returned by the tools.
+  - The first eval run showed the model creating 5 pause requests for "pause all ad sets", although
+    the prompt said one at a time; it is now limited to one per question in code, not only in the prompt.
+  - During deployment the AI read a health check as proof the new version was live; the dashboard
+    showed a crash. I now check the deploy logs myself.
+  - AI-written React code turned the page white on the first click (an effect returned a Promise);
+    found by testing in the browser.
 
 ## Assumptions
 - Asked Eshkol (my one question) about the mock Meta Ads API mentioned in the brief;
