@@ -79,8 +79,9 @@
 - Config validated with zod at startup → fail fast. This caught a real issue during deploy:
   an invalid NODE_ENV value made the service refuse to start with a clear error.
 - Secrets: .env (gitignored) locally, Railway environment variables in production. Never committed.
-- Hosting: Railway (always-on, auto-deploys on push to main). Currently on the trial
-  ($5 credit / 30 days); will confirm plan + monthly cost before submitting.
+- Hosting: Railway (always-on, auto-deploys on push to main), Hobby plan ($5/month including $5 of
+  usage); see the cost estimate above.
+
 
 ## Step 1 – Mock Meta Ads API
 - Separate service with bearer-token auth: pausing an ad set is a real network call to an external system.
