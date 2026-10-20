@@ -32,6 +32,8 @@ function memoryStore(): ActionStore & { audit: AuditEntry[] } {
     addApprover: async (a) => void approvers.set(a._id, a),
     isApprover: async (userId) => approvers.has(userId),
     listApprovers: async () => [...approvers.values()],
+    recentRequests: async (limit) => [...requests.values()].slice(-limit).reverse(),
+    recentAudit: async (limit) => audit.slice(-limit).reverse(),
   };
 }
 

@@ -1,13 +1,17 @@
+import { existsSync } from "node:fs";
 import type { Server } from "node:http";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import { webhookCallback } from "grammy";
-import { bot, chat, notifyApprovers, proposeAndNotify, store, tools } from "./bot.js";
+import { bot, budget, chat, notifyApprovers, proposeAndNotify, store, tools } from "./bot.js";
 import { config } from "./config.js";
 import { db, mongo } from "./db.js";
 import { logger } from "./logger.js";
 import { createMcpRouter } from "./mcp/server.js";
 import { buildDailyReport } from "./report/daily.js";
 import { MongoRunStore, startDailyReport } from "./report/schedule.js";
+import { createApiRouter } from "./web/api.js";
 import { app } from "./server.js";
 
 function listen(port: number): Promise<Server> {
@@ -46,6 +50,22 @@ async function main(): Promise<void> {
       }),
     );
   }
+
+  // The GUI: a JSON API, and the React app built into dist/public (see web/vite.config.ts).
+  app.use(
+    "/api",
+    createApiRouter({
+      accessCode: config.approverCode,
+      ads: tools,
+      chat,
+      proposePause: proposeAndNotify,
+      store,
+      budget: () => budget.status(),
+      onError: (err) => logger.error({ err }, "GUI chat failed"),
+    }),
+  );
+  const publicDir = join(dirname(fileURLToPath(import.meta.url)), "public");
+  if (existsSync(publicDir)) app.use(express.static(publicDir));
 
   const server = await listen(config.port);
   logger.info(

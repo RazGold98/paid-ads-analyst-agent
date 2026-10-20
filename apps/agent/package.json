@@ -8,12 +8,13 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && vite build --config web/vite.config.ts",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
     "test": "vitest run",
     "check:data": "tsx src/scripts/check-data.ts",
-    "ask": "tsx src/scripts/ask.ts"
+    "ask": "tsx src/scripts/ask.ts",
+    "dev:web": "vite --config web/vite.config.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.0",
@@ -27,9 +28,15 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^20.19.43",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
     "pino-pretty": "^13.2.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
+    "vite": "8.3.2",
     "vitest": "^4.1.12"
   }
 }

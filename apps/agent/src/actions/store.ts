@@ -9,7 +9,7 @@ import type { AdSetStatus } from "../ads/types.js";
 export type ActionStatus = "pending" | "executing" | "succeeded" | "failed" | "unknown" | "rejected" | "expired";
 
 export interface Requester {
-  channel: "telegram" | "mcp";
+  channel: "telegram" | "mcp" | "web";
   name: string;
   // Telegram chat to notify about the outcome; absent for MCP clients.
   chatId?: number;
@@ -79,6 +79,9 @@ export interface ActionStore {
   addApprover(approver: Approver): Promise<void>;
   isApprover(userId: number): Promise<boolean>;
   listApprovers(): Promise<Approver[]>;
+  // For the GUI: newest first.
+  recentRequests(limit: number): Promise<ActionRequest[]>;
+  recentAudit(limit: number): Promise<AuditEntry[]>;
 }
 
 export class MongoActionStore implements ActionStore {
@@ -151,5 +154,13 @@ export class MongoActionStore implements ActionStore {
 
   listApprovers(): Promise<Approver[]> {
     return this.approvers.find().toArray();
+  }
+
+  recentRequests(limit: number): Promise<ActionRequest[]> {
+    return this.requests.find().sort({ createdAt: -1 }).limit(limit).toArray();
+  }
+
+  recentAudit(limit: number): Promise<AuditEntry[]> {
+    return this.audit.find().sort({ at: -1 }).limit(limit).toArray();
   }
 }
