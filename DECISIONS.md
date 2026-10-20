@@ -41,7 +41,7 @@
 - Atlas IP access is 0.0.0.0/0 because Railway has no static egress IP; access is protected by
   DB credentials, and the mock itself by a bearer token.
 
-  ## Steps 2–3 – Data layer (client, cleaning, metrics, tools)
+## Steps 2–3 – Data layer (client, cleaning, metrics, tools)
 - Read-only API client: 8s timeout, retries (x2) only for GET on network errors, timeouts and 5xx;
   never on 4xx. Writes are not retried blindly — the pause action (step 6) uses an Idempotency-Key.
 - Responses are validated with zod but permissively: numeric strings are accepted and reported by the
@@ -99,14 +99,14 @@
   conversions, CPA and ROAS, the expected impact, the agent's reason, who asked and when it expires.
   The numbers are read from the API by our code when the request is created, not written by the
   model, so the approver is not shown invented figures. Only the reason is the model's text.
-- Approvers register with /register <code>. The code is shared with testers; it is a demo-level
-  control. In production I would use per-user invites or SSO.
+- Approvers register by sending /register followed by the access code. The code is shared with
+  testers; it is a demo-level control. In production I would use per-user invites or SSO.
 - Any registered approver can approve, including the requester: the requirement is that a human
   approves the specific action. A real deployment might require a second person.
 - Approval is an atomic MongoDB update (pending → executing only if still pending and not expired),
   so a double click or two approvers at once can only execute the action once.
 - Before acting, the ad set's status is read again: if it was paused by hand meanwhile, nothing is sent.
-- The pause request is sent once with an Idempotency-Key (pause-<request id>), never retried blindly.
+- The pause request is sent once with an Idempotency-Key ("pause-" plus the request id), never retried blindly.
 - After any response, success or error, the real status is read back (reconcile). If the API failed
   halfway but the ad set is paused, the result is "succeeded" with a note; if it is still active,
   "failed"; if the status cannot be read, "unknown" with an instruction to check manually.
@@ -172,8 +172,8 @@
 
 ## Step 10 – GUI
 - A React page (Vite) with the chat, the pause requests, the action log and the budget meter.
-- Built into dist/public by the same `npm run build` and served by the agent's Express server: one
-  service, one URL, nothing extra to deploy.
+- Built into dist/public by the same npm run build command and served by the agent's Express server:
+  one service, one URL, nothing extra to deploy.
 - The API under /api is a thin layer over what already exists (the agent loop, the action store, the
   budget guard); there is no new business logic.
 - Login is the approver code, because the chat costs money and should not be open to the internet.
