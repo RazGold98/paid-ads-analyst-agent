@@ -27,11 +27,11 @@ svg { width: 297mm; height: 210mm; display: block; font-family: -apple-system, "
 <marker id="hs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4b5563"/></marker>
 </defs>
 <text class="title" x="30" y="44">Paid Ads Analyst Agent — architecture</text>
-<text class="sub" x="30" y="70">Two Railway services from one repo. The model can read and propose; only a registered human in Telegram can approve a change.</text>
+<text class="sub" x="30" y="70">Two Render services from one repo. The model can read and propose; only a registered human in Telegram can approve a change.</text>
 <rect class="group" x="20" y="80" width="290" height="800" rx="14"/>
 <text class="g" x="36" y="101">People and clients</text>
 <rect class="group" x="340" y="80" width="820" height="800" rx="14"/>
-<text class="g" x="356" y="101">Agent service · Railway · Node 20 + TypeScript (apps/agent)</text>
+<text class="g" x="356" y="101">Agent service · Render · Node 20 + TypeScript (apps/agent)</text>
 <rect class="group" x="1190" y="80" width="390" height="800" rx="14"/>
 <text class="g" x="1206" y="101">External systems</text>
 <rect class="people" x="35" y="125" width="260" height="90" rx="10"/>
@@ -115,7 +115,7 @@ svg { width: 297mm; height: 210mm; display: block; font-family: -apple-system, "
 <text class="l" x="1219" y="203">Cost reported per call → budget guard</text>
 <rect class="ext" x="1205" y="255" width="360" height="300" rx="10"/>
 <text class="t" x="1219" y="281" font-size="17">Mock Meta Ads API (apps/mock-meta-api)</text>
-<text class="l" x="1219" y="305">Separate Railway service, bearer token</text>
+<text class="l" x="1219" y="305">Separate Render service, bearer token</text>
 <text class="l" x="1219" y="324"></text>
 <text class="l" x="1219" y="343">GET adsets, insights (30 days to yesterday)</text>
 <text class="l" x="1219" y="362">POST adset status + Idempotency-Key</text>
@@ -159,7 +159,7 @@ svg { width: 297mm; height: 210mm; display: block; font-family: -apple-system, "
 <text class="al" x="190" y="782">daily report</text>
 <rect class="secret" x="20" y="900" width="1560" height="175" rx="10"/>
 <text class="t" x="34" y="926" font-size="17">Where secrets live</text>
-<text class="l" x="34" y="950">Production: Railway variables, per service. Local development: .env files (gitignored). Never in the repository.</text>
+<text class="l" x="34" y="950">Production: Render environment variables, per service. Local development: .env files (gitignored). Never in the repository.</text>
 <text class="l" x="34" y="969">Agent: TELEGRAM_BOT_TOKEN · TELEGRAM_WEBHOOK_SECRET · OPENROUTER_API_KEY · MONGODB_URI · MOCK_API_TOKEN · APPROVER_CODE · MCP_API_KEYS</text>
 <text class="l" x="34" y="988">Mock API: MOCK_API_TOKEN · MONGODB_URI</text>
 <text class="l" x="34" y="1007">MCP keys are held in memory only as SHA-256 hashes and compared in constant time; the approver code is compared the same way.</text>

@@ -46,16 +46,16 @@ Other commands: /report sends the morning report now (it also arrives every day 
 Only one request per question, requests expire after 2 hours, and every step is in the action log.
 
 ### Web page
-[paid-ads-analyst-agent-production.up.railway.app](https://paid-ads-analyst-agent-production.up.railway.app),
+[paid-ads-analyst-agent.onrender.com](https://paid-ads-analyst-agent.onrender.com),
 log in with the access code. Chat, pause requests, action log and the AI budget meter.
 Approving stays in Telegram.
 
 ### MCP (for other agents)
-Endpoint: `https://paid-ads-analyst-agent-production.up.railway.app/mcp` (Streamable HTTP, stateless).
+Endpoint: `https://paid-ads-analyst-agent.onrender.com/mcp` (Streamable HTTP, stateless).
 Authenticate with `Authorization: Bearer YOUR_KEY`. List the tools your key can use:
 
 ```bash
-curl -X POST https://paid-ads-analyst-agent-production.up.railway.app/mcp \
+curl -X POST https://paid-ads-analyst-agent.onrender.com/mcp \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
@@ -110,21 +110,34 @@ Use a separate Telegram bot for development, so local runs never interfere with 
 | `npm run dev:web` | the web page with hot reload, forwarding /api to the local agent |
 | `npm run build` | compile the server and build the web page into dist/public |
 
-## Deploy (Railway)
+## Deploy (Render)
 
-Two services from this repository, each auto-deployed on push to main.
-Secrets live only in Railway variables (and in a local, gitignored `.env`).
+Two Render Web Services from this repository, each auto-deployed on push to main, on Free instances.
+Secrets live only in Render environment variables (and in a local, gitignored `.env`).
 
-**Add any new required variable in Railway and deploy it before pushing code that needs it.**
+| Setting | Agent service | Mock API service |
+|---|---|---|
+| Root Directory | `apps/agent` | `apps/mock-meta-api` |
+| Build Command | `npm ci --include=dev && npm run build` | `npm ci --include=dev && npm run build` |
+| Start Command | `npm start` | `npm start` |
+| Health Check Path | `/health` | `/health` |
+
+The build installs devDependencies on purpose: TypeScript and Vite are devDependencies, and with
+`NODE_ENV=production` a plain `npm ci` would skip them.
+
+Free instances sleep after 15 minutes without traffic, which would delay the first Telegram answer and
+stop the morning report. An uptime monitor pings both `/health` endpoints every 5 minutes to keep them awake.
+
+**Add any new required variable in Render and deploy it before pushing code that needs it.**
+In Render, add variables one per field: pasting a multi-line `.env` can merge several lines into one value.
 The agent validates its configuration at startup and refuses to start if anything is missing or invalid.
 After a deploy, check the deploy logs (for example "MongoDB connected"), not only `/health`.
 
 ### Agent service
-Root directory `apps/agent` · build `npm run build` · start `npm start` · health check `GET /health`.
 
 | Variable | Required | Meaning |
 |---|---|---|
-| `NODE_ENV` | | `production` on Railway |
+| `NODE_ENV` | | `production` on Render |
 | `TELEGRAM_BOT_TOKEN` | yes | bot token from @BotFather |
 | `PUBLIC_URL` | in production | the service's public HTTPS URL; enables webhook mode |
 | `TELEGRAM_WEBHOOK_SECRET` | with `PUBLIC_URL` | random string (A-Z, a-z, 0-9, _ and -) |
@@ -140,14 +153,13 @@ Root directory `apps/agent` · build `npm run build` · start `npm start` · hea
 | `REPORT_TIME` / `REPORT_TIMEZONE` | | default `08:00` / `Asia/Jerusalem` |
 | `MCP_API_KEYS` | | `name:key:scopes`, comma-separated, scopes `read` and/or `propose` joined with `+`, keys 24+ characters; MCP is off when empty |
 
-`PORT` is set by Railway.
+`PORT` is set by Render.
 
 ### Mock Meta Ads API service
-Root directory `apps/mock-meta-api` · build `npm run build` · start `npm start`.
 
 | Variable | Required | Meaning |
 |---|---|---|
-| `NODE_ENV` | | `production` on Railway |
+| `NODE_ENV` | | `production` on Render |
 | `MOCK_API_TOKEN` | yes | bearer token the agent must send |
 | `MONGODB_URI` | yes | MongoDB connection string (ad set statuses and idempotency keys) |
 | `MONGODB_DB` | | default `mock_meta` |

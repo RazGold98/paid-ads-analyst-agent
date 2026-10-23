@@ -27,8 +27,10 @@
   React with Vite for the web page, built and served by the same service.
 - MongoDB Atlas for agent state: free tier, document-shaped records (requests, audit log, usage), and
   atomic conditional updates and unique ids that make "run once" guarantees simple.
-- Railway: always-on hosting, which the Telegram webhook and the scheduler need, auto-deploy on push,
-  and environment variables for secrets. Vitest for tests.
+- Render (originally Railway, see "Hosting incident and move to Render"): two Web Services on the free
+  tier, auto-deploy on push and environment variables for secrets. The Telegram webhook and the
+  scheduler need the service awake, so an uptime monitor pings both /health endpoints every 5 minutes.
+  Vitest for tests.
 
 ## Cost estimate (model + hosting, target under $50/month)
 - Usage assumed by the brief: 5 people × 20 uses × 22 working days = 2,200 questions per month.
@@ -37,11 +39,13 @@
   total, about $0.0007 per call. A question takes 2–3 calls, so about $0.002 per question.
   2,200 × $0.002 ≈ $4.40 per month. Even if real questions were three times heavier, about $13.
 - The morning report uses no model (fixed rules), so it costs nothing in model usage.
-- Hosting: a real deployment would use Railway Hobby, $5/month including $5 of usage (the demo runs on
-  the trial credit). Two small, mostly idle Node services; at about $10 per GB-month of memory, roughly
-  0.15 GB each is about $3, plus a little CPU, within the included $5. MongoDB Atlas free tier: $0.
-- Expected total: about $10/month. Worst case: the model is capped at $40 by the budget guard, plus
-  hosting of about $5, which stays under $50.
+- Hosting: the demo runs on Render's free tier ($0), kept awake by a free uptime monitor. A production
+  setup would use a paid always-on instance instead, about $7 per service per month, so about $14 for
+  both. MongoDB Atlas free tier: $0.
+- Expected total: about $4–5/month on the free tier, or about $18/month with paid instances.
+- Worst case: the model is capped by the budget guard. With paid instances I would set
+  MONTHLY_BUDGET_USD to 36, so $36 for the model plus $14 for hosting stays within $50; on the free
+  tier the default cap of $40 already does.
 - Near the limit: alerts to the approvers at 70% and 85% of the model budget; at 100% the agent stops
   answering and says why, while approvals keep working. OpenRouter's account credit and key limit are a
   second, hard stop.
@@ -60,6 +64,19 @@
     showed a crash. I now check the deploy logs myself.
   - AI-written React code turned the page white on the first click (an effect returned a Promise);
     found by testing in the browser.
+
+## Hosting incident and move to Render
+- On Oct 21 Railway disclosed a breach of stored environment variables and paused all deployments, with
+  trial plans the last to be restored. OpenRouter disabled the exposed model key.
+- While the model key was disabled, everything that doesn't use the model kept working: approvals, the
+  scheduled report, /budget and /register. That is the same split the budget guard relies on.
+- I rotated the secrets (model key, bot token, webhook secret, mock API token, approver code, MCP key)
+  and moved both services to Render's free tier, with an uptime monitor so they don't sleep.
+- The bot link didn't change: the agent registers its webhook with Telegram on every startup, so the
+  new URL took effect on the first deploy.
+- The new model key has a $5 credit cap, as a hard limit below the budget guard.
+- Known gap: the MongoDB user password could not be rotated yet because of an Atlas project permission
+  issue. To do.
 
 ## Assumptions
 - Asked Eshkol (my one question) about the mock Meta Ads API mentioned in the brief;
